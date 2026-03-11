@@ -1,14 +1,17 @@
 import React, { useState } from 'react';
 import {
     View, Text, StyleSheet, TouchableOpacity, TextInput,
-    StatusBar, ScrollView,
+    StatusBar, ScrollView, ActivityIndicator,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../navigation/AppNavigator';
 import type { UserRole } from '../data/properties';
 import { ChevronLeft, Phone } from 'lucide-react-native';
-import Svg, { Circle, Path } from 'react-native-svg';
+import Svg, { Circle, Path, G, ClipPath, Rect } from 'react-native-svg';
+import { useAppStore } from '../store/useAppStore';
+import { GoogleSignin } from '@react-native-google-signin/google-signin';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 type Nav = NativeStackNavigationProp<RootStackParamList, 'Welcome'>;
 
@@ -27,10 +30,22 @@ const ROLE_COLORS: Record<string, { bg: string; selected: string; text: string }
 };
 
 export default function WelcomeScreen() {
-    const navigation = useNavigation<Nav>();
+    const navigation = useNavigation<any>();
+    const insets = useSafeAreaInsets();
+    const updateProfile = useAppStore(state => state.updateProfile);
+    const setUserRole = useAppStore(state => state.setUserRole);
     const [phone, setPhone] = useState('');
     const [selectedRole, setSelectedRole] = useState<UserRole>(null);
     const [step, setStep] = useState<'role' | 'phone'>('role');
+    const [loading, setLoading] = useState(false);
+
+    React.useEffect(() => {
+        // [BACKEND TASK] The backend developer needs to replace this with the real Web Client ID
+        GoogleSignin.configure({
+            webClientId: 'YOUR_WEB_CLIENT_ID_HERE.apps.googleusercontent.com',
+            offlineAccess: true,
+        });
+    }, []);
 
     const canProceedRole = selectedRole !== null;
     const canProceedPhone = phone.length === 10;
@@ -40,8 +55,40 @@ export default function WelcomeScreen() {
             if (canProceedRole) setStep('phone');
         } else {
             if (canProceedPhone) {
-                navigation.navigate('OTP', { phone, role: selectedRole });
+                setLoading(true);
+                setTimeout(() => {
+                    setLoading(false);
+                    navigation.navigate('OTP', { phone, role: selectedRole });
+                }, 800);
             }
+        }
+    };
+
+    const handleGoogleLogin = async () => {
+        if (!selectedRole) return;
+        
+        try {
+            await GoogleSignin.hasPlayServices();
+            const userInfo = await GoogleSignin.signIn();
+            const idToken = userInfo?.data?.idToken;
+            
+            if (idToken) {
+                // [BACKEND TASK] 
+                // 1. Send this `idToken` to your API Endpoint (e.g. POST /api/auth/google)
+                // 2. The API will return user details (name, email)
+                // 3. Update the global store with those real details:
+                
+                // For now, we simulate success:
+                const mockName = userInfo?.data?.user?.name || 'Google User';
+                const mockEmail = userInfo?.data?.user?.email || 'user@gmail.com';
+                
+                updateProfile(mockName, '', mockEmail);
+                setUserRole(selectedRole);
+                navigation.reset({ index: 0, routes: [{ name: 'MainTabs' }] });
+            }
+        } catch (error: any) {
+            console.log('Google Sign-In Error:', error);
+            // Handle error (e.g., user cancelled)
         }
     };
 
@@ -55,7 +102,7 @@ export default function WelcomeScreen() {
             {/* Back button */}
             <TouchableOpacity
                 onPress={() => step === 'role' ? navigation.goBack() : setStep('role')}
-                style={styles.backBtn}
+                style={[styles.backBtn, { top: insets.top + 10 }]}
             >
                 <ChevronLeft size={20} color="#fff" strokeWidth={2.5} />
             </TouchableOpacity>
@@ -173,16 +220,45 @@ export default function WelcomeScreen() {
 
                         <TouchableOpacity
                             onPress={handleContinue}
+                            disabled={loading}
                             style={[
                                 styles.continueBtn,
                                 { backgroundColor: canProceedPhone ? '#0C886B' : '#d9d9d9' },
                             ]}
                             activeOpacity={0.85}
                         >
-                            <Text style={[
-                                styles.continueBtnText,
-                                { color: canProceedPhone ? '#fff' : '#8f92a1' },
-                            ]}>Send OTP</Text>
+                            {loading ? (
+                                <ActivityIndicator color="#fff" size="small" />
+                            ) : (
+                                <Text style={[
+                                    styles.continueBtnText,
+                                    { color: canProceedPhone ? '#fff' : '#8f92a1' },
+                                ]}>Send OTP</Text>
+                            )}
+                        </TouchableOpacity>
+
+                        <View style={styles.dividerRow}>
+                            <View style={styles.divider} />
+                            <Text style={styles.dividerText}>OR</Text>
+                            <View style={styles.divider} />
+                        </View>
+
+                        <TouchableOpacity
+                            onPress={handleGoogleLogin}
+                            style={styles.googleBtn}
+                            activeOpacity={0.85}
+                        >
+                            {/* Official Google G SVG */}
+                            <View style={styles.googleIconBox}>
+                                <Svg width={22} height={22} viewBox="0 0 48 48">
+                                    <Path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z" />
+                                    <Path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z" />
+                                    <Path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z" />
+                                    <Path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z" />
+                                    <Path fill="none" d="M0 0h48v48H0z" />
+                                </Svg>
+                            </View>
+                            <Text style={styles.googleBtnText}>Continue with Google</Text>
                         </TouchableOpacity>
 
                         <Text style={styles.termsText}>
@@ -199,17 +275,17 @@ export default function WelcomeScreen() {
 const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: '#fff' },
     gradientTop: {
-        position: 'absolute', left: 0, right: 0, top: 0, height: 200,
+        position: 'absolute', left: 0, right: 0, top: 0, height: 220,
         backgroundColor: '#6c5dd3',
-        borderBottomLeftRadius: 0, borderBottomRightRadius: 0,
+        borderBottomLeftRadius: 36, borderBottomRightRadius: 36,
     },
     backBtn: {
-        position: 'absolute', left: 26, top: 52, zIndex: 10,
+        position: 'absolute', left: 26, zIndex: 10,
         width: 40, height: 40, backgroundColor: 'rgba(255,255,255,0.2)',
         borderRadius: 20, alignItems: 'center', justifyContent: 'center',
     },
     logoSection: {
-        alignItems: 'center', paddingTop: 90, zIndex: 5,
+        alignItems: 'center', paddingTop: 75, paddingBottom: 24, zIndex: 5,
     },
     logoBox: {
         width: 64, height: 64, backgroundColor: 'rgba(255,255,255,0.2)',
@@ -217,7 +293,7 @@ const styles = StyleSheet.create({
     },
     logoTitle: { fontSize: 22, fontWeight: '800', color: '#fff', letterSpacing: -0.6 },
     logoSubtitle: { fontSize: 13, color: 'rgba(255,255,255,0.7)', marginTop: 2 },
-    contentArea: { flex: 1, paddingHorizontal: 26, paddingTop: 20 },
+    contentArea: { flex: 1, paddingHorizontal: 26, paddingTop: 28 },
     heading: {
         fontSize: 28, fontWeight: '800', color: '#1b1d21',
         letterSpacing: -1, lineHeight: 36, marginBottom: 8,
@@ -246,7 +322,7 @@ const styles = StyleSheet.create({
         width: '100%', height: 56, borderRadius: 16,
         alignItems: 'center', justifyContent: 'center', marginTop: 28,
     },
-    continueBtnText: { fontSize: 14, fontWeight: '700', letterSpacing: -0.3 },
+    continueBtnText: { fontSize: 16, fontWeight: '700', letterSpacing: -0.3 },
     phoneInputRow: {
         width: '100%', height: 60, backgroundColor: '#f7f8f9',
         borderRadius: 16, flexDirection: 'row', alignItems: 'center',
@@ -264,4 +340,22 @@ const styles = StyleSheet.create({
         marginTop: 20, lineHeight: 18,
     },
     termsLink: { fontWeight: '700', color: '#0C886B' },
+    dividerRow: {
+        flexDirection: 'row', alignItems: 'center', gap: 12, marginVertical: 20,
+    },
+    divider: { flex: 1, height: 1, backgroundColor: '#f0f0f0' },
+    dividerText: { fontSize: 12, fontWeight: '600', color: '#8f92a1' },
+    googleBtn: {
+        width: '100%', height: 56, borderRadius: 16,
+        flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+        gap: 12, borderWidth: 1.5, borderColor: '#e8e8e8',
+        backgroundColor: '#ffffff',
+        shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.06, shadowRadius: 6, elevation: 2,
+    },
+    googleIconBox: {
+        width: 26, height: 26,
+        alignItems: 'center', justifyContent: 'center',
+    },
+    googleBtnText: { fontSize: 15, fontWeight: '600', color: '#1b1d21' },
 });

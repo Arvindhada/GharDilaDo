@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image, Dimensions } from 'react-native';
-import { MapPin, Star, Heart } from 'lucide-react-native';
+import { Building2, Star, Heart } from 'lucide-react-native';
 import { useAppTheme } from '../context/ThemeContext';
 import { useAppStore } from '../store/useAppStore';
 import { type Property, formatRent } from '../data/properties';
@@ -16,7 +16,8 @@ interface PropertyCardProps {
 
 export default function PropertyCard({ property: p, onPress, variant = 'vertical', fullWidth = false }: PropertyCardProps) {
     const { t } = useAppTheme();
-    const { savedIds, toggleSave } = useAppStore();
+    const savedIds = useAppStore(state => state.savedIds);
+    const toggleSave = useAppStore(state => state.toggleSave);
     const isSaved = savedIds.includes(p?.id);
 
     // CRITICAL SAFETY CHECK: Prevent crash if property data is missing
@@ -35,7 +36,7 @@ export default function PropertyCard({ property: p, onPress, variant = 'vertical
                 <View style={styles.rowBody}>
                     <Text style={[styles.rowTitle, { color: t.title }]} numberOfLines={1}>{p.title}</Text>
                     <View style={styles.localityRow}>
-                        <MapPin size={11} color={t.muted} strokeWidth={2} />
+                        <Building2 size={11} color={t.muted} strokeWidth={2} />
                         <Text style={[styles.rowLocality, { color: t.muted }]}>{p.locality}</Text>
                     </View>
                     <View style={styles.priceRow}>
@@ -82,7 +83,7 @@ export default function PropertyCard({ property: p, onPress, variant = 'vertical
                 </View>
                 <Text style={[styles.cardTitle, { color: t.title }]} numberOfLines={1}>{p.title}</Text>
                 <View style={styles.locRow}>
-                    <MapPin size={11} color={t.muted} strokeWidth={2} />
+                    <Building2 size={11} color={t.muted} strokeWidth={2} />
                     <Text style={[styles.locText, { color: t.muted }]} numberOfLines={1}>{p.locality}, Gandhinagar</Text>
                 </View>
                 <View style={styles.cardFooter}>

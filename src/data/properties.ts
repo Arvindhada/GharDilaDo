@@ -1,6 +1,7 @@
 export type PropertyType = 'Flat' | 'House' | 'Villa' | 'Floor' | 'Shop';
 export type FurnishingType = 'Furnished' | 'Semi-Furnished' | 'Unfurnished';
 export type UserRole = 'broker' | 'owner' | 'seeker' | null;
+export type ImageCategory = 'Bedroom' | 'Kitchen' | 'Bathroom' | 'Living Room' | 'Other';
 
 export interface Property {
   id: string;
@@ -25,6 +26,7 @@ export interface Property {
   ownerName?: string;
   phone: string;
   images: string[];
+  categorizedImages?: { [key: string]: string[] }; // Using object to store category -> images mapping
   amenities: string[];
   description: string;
   isVerified: boolean;
@@ -33,24 +35,52 @@ export interface Property {
   rating: number;
   reviews: number;
   postedDate: string;
+  brokerage?: string; // e.g. "15 Days Rent" or "2% of sale"
 }
 
 export const LOCALITIES = [
-  'Sargasan',
   'Kudasan',
+  'Sargasan',
+  'Raysan',
   'Infocity',
+  'PDPU Road',
+  'Koba',
+  'Adalaj',
+  'Gift City',
+  'Gandhinagar Bus Stand',
+  'Nirma University',
   'Sector 1',
+  'Sector 2',
+  'Sector 3',
+  'Sector 4',
+  'Sector 4A',
   'Sector 5',
+  'Sector 5A',
   'Sector 6',
+  'Sector 7',
+  'Sector 8',
   'Sector 9',
+  'Sector 10',
   'Sector 11',
+  'Sector 12',
+  'Sector 13',
+  'Sector 14',
+  'Sector 15',
   'Sector 16',
+  'Sector 17',
+  'Sector 18',
+  'Sector 19',
+  'Sector 20',
   'Sector 21',
+  'Sector 22',
   'Sector 23',
+  'Sector 24',
+  'Sector 25',
+  'Sector 26',
+  'Sector 27',
   'Sector 28',
-  'Randesan',
-  'Vavol',
-  'Pethapur',
+  'Sector 29',
+  'Sector 30',
 ];
 
 export const PROPERTY_TYPES: PropertyType[] = ['Flat', 'House', 'Villa', 'Floor', 'Shop'];
@@ -76,7 +106,7 @@ export const mockProperties: Property[] = [
     postedBy: 'broker',
     postedByRole: 'broker',
     brokerName: 'Suresh Patel',
-    phone: '+91 98765 43210',
+    phone: '+91 93514 71243',
     images: [
       'https://images.unsplash.com/photo-1656271156496-793b972f4345?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=800',
       'https://images.unsplash.com/photo-1711517479380-9fa1735be261?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=800',
@@ -110,7 +140,7 @@ export const mockProperties: Property[] = [
     postedBy: 'owner',
     postedByRole: 'owner',
     ownerName: 'Ramesh Shah',
-    phone: '+91 94263 11110',
+    phone: '+91 93514 71243',
     images: [
       'https://images.unsplash.com/photo-1737955658451-851e128f98a2?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=800',
       'https://images.unsplash.com/photo-1643297551340-19d8ad4f20ad?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=800',
@@ -144,7 +174,7 @@ export const mockProperties: Property[] = [
     postedBy: 'broker',
     postedByRole: 'broker',
     brokerName: 'Kiran Modi',
-    phone: '+91 99099 11234',
+    phone: '+91 93514 71243',
     images: [
       'https://images.unsplash.com/photo-1633505765486-e404bbbec654?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=800',
     ],
@@ -177,7 +207,7 @@ export const mockProperties: Property[] = [
     postedBy: 'owner',
     postedByRole: 'owner',
     ownerName: 'Pratik Joshi',
-    phone: '+91 70693 44521',
+    phone: '+91 93514 71243',
     images: [
       'https://images.unsplash.com/photo-1643297551340-19d8ad4f20ad?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=800',
     ],
@@ -210,7 +240,7 @@ export const mockProperties: Property[] = [
     postedBy: 'broker',
     postedByRole: 'broker',
     brokerName: 'Suresh Patel',
-    phone: '+91 98765 43210',
+    phone: '+91 93514 71243',
     images: [
       'https://images.unsplash.com/photo-1713123206955-10447a3997c2?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=800',
       'https://images.unsplash.com/photo-1656271156496-793b972f4345?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=800',
@@ -244,7 +274,7 @@ export const mockProperties: Property[] = [
     postedBy: 'owner',
     postedByRole: 'owner',
     ownerName: 'Bhavna Trivedi',
-    phone: '+91 96380 78901',
+    phone: '+91 93514 71243',
     images: [
       'https://images.unsplash.com/photo-1711517479380-9fa1735be261?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=800',
     ],
@@ -277,7 +307,7 @@ export const mockProperties: Property[] = [
     postedBy: 'broker',
     postedByRole: 'broker',
     brokerName: 'Nirav Shah',
-    phone: '+91 98240 12345',
+    phone: '+91 93514 71243',
     images: [
       'https://images.unsplash.com/photo-1737955658451-851e128f98a2?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=800',
     ],
@@ -310,7 +340,7 @@ export const mockProperties: Property[] = [
     postedBy: 'owner',
     postedByRole: 'owner',
     ownerName: 'Dinesh Patel',
-    phone: '+91 94265 99887',
+    phone: '+91 93514 71243',
     images: [
       'https://images.unsplash.com/photo-1633505765486-e404bbbec654?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=800',
     ],
@@ -343,7 +373,7 @@ export const mockProperties: Property[] = [
     postedBy: 'broker',
     postedByRole: 'broker',
     brokerName: 'Mitesh Solanki',
-    phone: '+91 90998 55443',
+    phone: '+91 93514 71243',
     images: [
       'https://images.unsplash.com/photo-1713123206955-10447a3997c2?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=800',
     ],
@@ -376,7 +406,7 @@ export const mockProperties: Property[] = [
     postedBy: 'owner',
     postedByRole: 'owner',
     ownerName: 'Hemant Bhatt',
-    phone: '+91 87099 44332',
+    phone: '+91 93514 71243',
     images: [
       'https://images.unsplash.com/photo-1643297551340-19d8ad4f20ad?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=800',
     ],
@@ -399,6 +429,12 @@ export const localityStats = [
   { name: 'Sector 21', count: 156, icon: '🏘' },
   { name: 'Randesan', count: 134, icon: '🏗' },
   { name: 'Vavol', count: 120, icon: '🏣' },
+];
+
+export const SORT_OPTIONS = [
+  { label: 'Relevance', value: 'default' },
+  { label: 'Price: Low to High', value: 'price_asc' },
+  { label: 'Price: High to Low', value: 'price_desc' },
 ];
 
 export function formatRent(rent: number): string {

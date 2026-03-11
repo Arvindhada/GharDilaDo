@@ -6,12 +6,14 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../navigation/AppNavigator';
-import { Bell, Search, MapPin, ChevronRight, Star, Heart, Building2, Home, TreePine, Layers, Store, Filter, Moon, Sun } from 'lucide-react-native';
+import { Bell, Search, ChevronRight, Star, Heart, Building2, Home, TreePine, Layers, Store, Filter, Moon, Sun } from 'lucide-react-native';
 import { useAppTheme } from '../context/ThemeContext';
 import { useAppStore } from '../store/useAppStore';
 import PropertyCard from '../components/PropertyCard';
+import PropertyCardSkeleton from '../components/PropertyCardSkeleton';
 import { ApiService } from '../services/apiService';
 import { mockProperties, localityStats, formatRent, type Property } from '../data/properties';
+import { translations } from '../data/translations';
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 
@@ -44,21 +46,35 @@ const CATEGORY_COUNTS: Record<string, string> = {
 export default function HomeScreen() {
     const navigation = useNavigation<Nav>();
     const { isDark, toggleDark, t } = useAppTheme();
-    const { savedIds, toggleSave } = useAppStore();
+    const savedIds = useAppStore(state => state.savedIds);
+    const toggleSave = useAppStore(state => state.toggleSave);
+    const name = useAppStore(state => state.name);
+    const recentlyViewedIds = useAppStore(state => state.recentlyViewedIds);
+    const userRole = useAppStore(state => state.userRole);
+    const userListings = useAppStore(state => state.userListings);
+    const language = useAppStore(state => state.language);
 
-    // Safety Layer: Fetch properties from Service instead of direct mock import
-    const [allProperties, setAllProperties] = React.useState<Property[]>([]);
+    const s = translations[language] || translations['English'];
+
+    const [apiProperties, setApiProperties] = React.useState<Property[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    // Derived state: instantly syncs API data + newly added user listings
+    const allProperties = [...userListings, ...apiProperties];
 
     React.useEffect(() => {
         const load = async () => {
+            setLoading(true);
             const data = await ApiService.getProperties();
-            setAllProperties(data);
+            setApiProperties(data);
+            // Step 6 Fix: Removed fake 1500ms delay
+            setLoading(false);
         };
         load();
     }, []);
 
     const featuredProperties = allProperties.filter(p => p.isFeatured);
-    const recentProperties = allProperties.slice(0, 4);
+    const recentListings = allProperties.slice(0, 4);
 
     return (
         <View style={styles.container}>
@@ -67,8 +83,17 @@ export default function HomeScreen() {
             {/* Dark Header */}
             <View style={styles.header}>
                 <View>
-                    <Text style={styles.welcome}>Welcome to</Text>
-                    <Text style={styles.brand}>ghardilado.com</Text>
+                    <Text style={styles.welcome}>{s.welcome}</Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                        <Text style={styles.brand}>{name?.trim() ? name : 'GharDilaDo'} 👋</Text>
+                        {userRole !== 'seeker' && (
+                            <View style={{ backgroundColor: 'rgba(12, 136, 107, 0.2)', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6, borderWidth: 1, borderColor: '#0fba81' }}>
+                                <Text style={{ color: '#0fba81', fontSize: 10, fontWeight: '700', textTransform: 'uppercase' }}>
+                                    ✓ {s.pro_badge} {userRole}
+                                </Text>
+                            </View>
+                        )}
+                    </View>
                 </View>
                 <View style={styles.headerBtnRow}>
                     <TouchableOpacity
@@ -89,27 +114,29 @@ export default function HomeScreen() {
             {/* White content section */}
             <View style={[styles.content, { backgroundColor: t.bg }]}>
                 <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.pb100}>
-                    {/* Search Bar */}
-                    <TouchableOpacity
-                        style={[styles.searchBar, { backgroundColor: t.cardBg }]}
-                        onPress={() => navigation.navigate('MainTabs' as any, { screen: 'Search' })}
-                        activeOpacity={0.7}
-                    >
-                        <Search size={18} color={t.muted} strokeWidth={1.8} />
-                        <Text style={[styles.searchPlaceholder, { color: t.muted }]}>
-                            Search localities, property{`\n`}type...
-                        </Text>
-                        <View style={styles.filterChip}>
-                            <Filter size={16} color="#fff" strokeWidth={2.2} />
-                        </View>
-                    </TouchableOpacity>
+                    {/* Search Bar - now inside white section */}
+                    <View style={styles.searchBarWrapper}>
+                        <TouchableOpacity
+                            style={[styles.searchBar, { backgroundColor: t.cardBg }]}
+                            onPress={() => navigation.navigate('MainTabs' as any, { screen: 'Search' })}
+                            activeOpacity={0.7}
+                        >
+                            <Search size={18} color={t.muted} strokeWidth={1.8} />
+                            <Text style={[styles.searchPlaceholder, { color: t.muted }]}>
+                                {s.search_hint}
+                            </Text>
+                            <View style={styles.filterChip}>
+                                <Filter size={16} color="#fff" strokeWidth={2.2} />
+                            </View>
+                        </TouchableOpacity>
+                    </View>
 
                     {/* Property Types */}
-                    <View style={styles.section}>
+                    <View style={[styles.section, { marginTop: 24 }]}>
                         <View style={styles.sectionHeader}>
-                            <Text style={[styles.sectionTitle, { color: t.title }]}>Property Types</Text>
+                            <Text style={[styles.sectionTitle, { color: t.title }]}>{s.categories}</Text>
                             <TouchableOpacity onPress={() => navigation.navigate('Listings', {})}>
-                                <Text style={styles.seeAll}>See All</Text>
+                                <Text style={styles.seeAll}>{s.see_all}</Text>
                             </TouchableOpacity>
                         </View>
                         <View style={styles.categoriesRow}>
@@ -132,22 +159,26 @@ export default function HomeScreen() {
                     {/* Featured Properties */}
                     <View style={styles.pt24}>
                         <View style={[styles.sectionHeader, styles.px26]}>
-                            <Text style={[styles.sectionTitle, { color: t.title }]}>Featured Properties</Text>
+                            <Text style={[styles.sectionTitle, { color: t.title }]}>{s.featured}</Text>
                             <TouchableOpacity onPress={() => navigation.navigate('Listings', { featured: true })}>
-                                <Text style={styles.seeAll}>See All</Text>
+                                <Text style={styles.seeAll}>{s.see_all}</Text>
                             </TouchableOpacity>
                         </View>
                         <FlatList
-                            data={featuredProperties}
+                            data={(loading ? [1, 2, 3] : featuredProperties) as any[]}
                             horizontal
                             showsHorizontalScrollIndicator={false}
                             contentContainerStyle={styles.featuredListContent}
-                            keyExtractor={p => p.id}
-                            renderItem={({ item: p }) => (
-                                <PropertyCard
-                                    property={p}
-                                    onPress={() => navigation.navigate('PropertyDetail', { propertyId: p.id })}
-                                />
+                            keyExtractor={(item, index) => loading ? `skel-${index}` : (item as Property).id}
+                            renderItem={({ item }) => (
+                                loading ? (
+                                    <PropertyCardSkeleton />
+                                ) : (
+                                    <PropertyCard
+                                        property={item as Property}
+                                        onPress={() => navigation.navigate('PropertyDetail', { propertyId: (item as Property).id })}
+                                    />
+                                )
                             )}
                         />
                     </View>
@@ -155,9 +186,9 @@ export default function HomeScreen() {
                     {/* Popular Localities */}
                     <View style={[styles.section, styles.pt24]}>
                         <View style={styles.sectionHeader}>
-                            <Text style={[styles.sectionTitle, { color: t.title }]}>Popular Localities</Text>
+                            <Text style={[styles.sectionTitle, { color: t.title }]}>{s.popular_localities}</Text>
                             <TouchableOpacity onPress={() => navigation.navigate('Listings', {})}>
-                                <Text style={styles.seeAll}>See All</Text>
+                                <Text style={styles.seeAll}>{s.see_all}</Text>
                             </TouchableOpacity>
                         </View>
                         <View style={styles.gap10}>
@@ -169,11 +200,11 @@ export default function HomeScreen() {
                                 >
                                     <View style={styles.localityLeft}>
                                         <View style={styles.localityIconBox}>
-                                            <MapPin size={20} color="#0C886B" strokeWidth={2} />
+                                            <Building2 size={20} color="#0C886B" strokeWidth={2} />
                                         </View>
                                         <View>
                                             <Text style={[styles.localityName, { color: t.title }]}>{loc.name}</Text>
-                                            <Text style={[styles.localityCount, { color: t.muted }]}>{loc.count} properties</Text>
+                                            <Text style={[styles.localityCount, { color: t.muted }]}>{loc.count} {s.properties_count}</Text>
                                         </View>
                                     </View>
                                     <View style={styles.arrowBtn}>
@@ -187,43 +218,47 @@ export default function HomeScreen() {
                     {/* Recent Listings */}
                     <View style={[styles.section, styles.pt24]}>
                         <View style={styles.sectionHeader}>
-                            <Text style={[styles.sectionTitle, { color: t.title }]}>Recent Listings</Text>
+                            <Text style={[styles.sectionTitle, { color: t.title }]}>{s.recent_listings}</Text>
                             <TouchableOpacity onPress={() => navigation.navigate('Listings', {})}>
-                                <Text style={styles.seeAll}>See All</Text>
+                                <Text style={styles.seeAll}>{s.see_all}</Text>
                             </TouchableOpacity>
                         </View>
                         <View style={styles.gap12}>
-                            {recentProperties.map(p => (
-                                <TouchableOpacity
-                                    key={p.id}
-                                    onPress={() => navigation.navigate('PropertyDetail', { propertyId: p.id })}
-                                    style={[styles.listRow, { backgroundColor: t.innerCardBg }]}
-                                    activeOpacity={0.85}
-                                >
-                                    <Image source={{ uri: p.images[0] }} style={styles.listImg} />
-                                    <View style={styles.listBody}>
-                                        <View style={styles.listBadgeRow}>
-                                            <View style={[styles.typeBadge, { backgroundColor: t.badgeBg }]}>
-                                                <Text style={[styles.typeBadgeText, { color: t.muted }]}>{p.type}</Text>
-                                            </View>
-                                            {p.isVerified && (
-                                                <View style={styles.verifiedChip}>
-                                                    <Text style={styles.verifiedChipText}>Verified</Text>
+                            {loading ? (
+                                [1, 2, 3].map((_, i) => <PropertyCardSkeleton key={i} />)
+                            ) : (
+                                allProperties.slice(0, 4).map(p => ( // Changed from `recentProperties` to `allProperties.slice(0,4)` to show general recent listings
+                                    <TouchableOpacity
+                                        key={p.id}
+                                        onPress={() => navigation.navigate('PropertyDetail', { propertyId: p.id })}
+                                        style={[styles.listRow, { backgroundColor: t.innerCardBg }]}
+                                        activeOpacity={0.85}
+                                    >
+                                        <Image source={{ uri: p.images[0] }} style={styles.listImg} />
+                                        <View style={styles.listBody}>
+                                            <View style={styles.listBadgeRow}>
+                                                <View style={[styles.typeBadge, { backgroundColor: t.badgeBg }]}>
+                                                    <Text style={[styles.typeBadgeText, { color: t.muted }]}>{p.type}</Text>
                                                 </View>
-                                            )}
+                                                {p.isVerified && (
+                                                    <View style={styles.verifiedChip}>
+                                                        <Text style={styles.verifiedChipText}>{s.verified}</Text>
+                                                    </View>
+                                                )}
+                                            </View>
+                                            <Text style={[styles.listTitle, { color: t.title }]} numberOfLines={1}>{p.title}</Text>
+                                            <View style={styles.listLocalityRow}>
+                                                <Building2 size={10} color={t.muted} strokeWidth={2} />
+                                                <Text style={[styles.listLocality, { color: t.muted }]} numberOfLines={1}>{p.locality}, Gandhinagar</Text>
+                                            </View>
+                                            <View style={styles.listPriceRow}>
+                                                <Text style={styles.listRent}>₹{p.rent.toLocaleString('en-IN')}/{s.mo}</Text>
+                                                <Text style={[styles.listMeta, { color: t.muted }]}>{p.bhk} {s.bhk} · {p.area} {s.sqft}</Text>
+                                            </View>
                                         </View>
-                                        <Text style={[styles.listTitle, { color: t.title }]} numberOfLines={1}>{p.title}</Text>
-                                        <View style={styles.listLocalityRow}>
-                                            <MapPin size={10} color={t.muted} strokeWidth={2} />
-                                            <Text style={[styles.listLocality, { color: t.muted }]} numberOfLines={1}>{p.locality}, Gandhinagar</Text>
-                                        </View>
-                                        <View style={styles.listPriceRow}>
-                                            <Text style={styles.listRent}>₹{p.rent.toLocaleString('en-IN')}/mo</Text>
-                                            <Text style={[styles.listMeta, { color: t.muted }]}>{p.bhk} BHK · {p.area} sqft</Text>
-                                        </View>
-                                    </View>
-                                </TouchableOpacity>
-                            ))}
+                                    </TouchableOpacity>
+                                ))
+                            )}
                         </View>
                     </View>
                 </ScrollView>
@@ -235,19 +270,25 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: '#1b1d21' },
     header: {
-        paddingHorizontal: 26, paddingTop: 12, paddingBottom: 18,
+        paddingHorizontal: 26, paddingTop: 52, paddingBottom: 20,
         flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+        backgroundColor: '#1b1d21',
     },
-    welcome: { color: 'rgba(255,255,255,0.7)', fontSize: 13, lineHeight: 18 },
-    brand: { color: '#fff', fontSize: 22, fontWeight: '800', letterSpacing: -0.6, lineHeight: 28 },
-    iconBtn: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
-    content: { flex: 1, borderTopLeftRadius: 40, borderTopRightRadius: 40, overflow: 'hidden' },
+    welcome: { color: 'rgba(255,255,255,0.6)', fontSize: 15, fontWeight: '500', marginBottom: 2 },
+    brand: { color: '#fff', fontSize: 26, fontWeight: '900', letterSpacing: -0.8 },
+    iconBtn: { width: 42, height: 42, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
+    content: { flex: 1, borderTopLeftRadius: 36, borderTopRightRadius: 36, overflow: 'hidden' },
+    searchBarWrapper: {
+        zIndex: 10,
+        paddingHorizontal: 26,
+        paddingTop: 24,
+    },
     searchBar: {
-        marginHorizontal: 26, marginTop: 22, marginBottom: 8, height: 60,
+        height: 60,
         borderRadius: 28, flexDirection: 'row', alignItems: 'center',
         paddingHorizontal: 20, gap: 10,
-        shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.06, shadowRadius: 8, elevation: 3,
+        shadowColor: '#000', shadowOffset: { width: 0, height: 6 },
+        shadowOpacity: 0.15, shadowRadius: 16, elevation: 10,
     },
     searchPlaceholder: { flex: 1, fontSize: 14, textAlign: 'center', lineHeight: 20 },
     filterChip: {

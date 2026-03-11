@@ -10,13 +10,16 @@ import WelcomeScreen from '../screens/WelcomeScreen';
 import OTPScreen from '../screens/OTPScreen';
 import ListingsScreen from '../screens/ListingsScreen';
 import PropertyDetailScreen from '../screens/PropertyDetailScreen';
+import EditProfileScreen from '../screens/EditProfileScreen';
 import NotificationsScreen from '../screens/NotificationsScreen';
 import SettingsScreen from '../screens/SettingsScreen';
 import AddListingScreen from '../screens/AddListingScreen';
+import AddListingMediaScreen from '../screens/AddListingMediaScreen';
 import HelpScreen from '../screens/HelpScreen';
 import PrivacyScreen from '../screens/PrivacyScreen';
 import DashboardScreen from '../screens/DashboardScreen';
 import FilterScreen from '../screens/FilterScreen';
+import VerificationScreen from '../screens/VerificationScreen';
 
 export type RootStackParamList = {
     Onboarding1: undefined;
@@ -29,11 +32,14 @@ export type RootStackParamList = {
     PropertyDetail: { propertyId: string };
     Notifications: undefined;
     Settings: undefined;
-    AddListing: undefined;
+    AddListing: { propertyId?: string } | undefined;
+    AddListingMedia: { propertyData: any; propertyId?: string };
     Help: undefined;
     Privacy: undefined;
     Dashboard: undefined;
-    Filter: undefined;
+    Filter: { filters?: any };
+    EditProfile: undefined;
+    Verification: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -55,10 +61,13 @@ export default function AppNavigator() {
             <Stack.Screen name="Notifications" component={NotificationsScreen} />
             <Stack.Screen name="Settings" component={SettingsScreen} />
             <Stack.Screen name="AddListing" component={AddListingScreen} />
+            <Stack.Screen name="AddListingMedia" component={AddListingMediaScreen} />
             <Stack.Screen name="Help" component={HelpScreen} />
             <Stack.Screen name="Privacy" component={PrivacyScreen} />
             <Stack.Screen name="Dashboard" component={DashboardScreen} />
             <Stack.Screen name="Filter" component={FilterScreen} />
+            <Stack.Screen name="EditProfile" component={EditProfileScreen} />
+            <Stack.Screen name="Verification" component={VerificationScreen} />
         </Stack.Navigator>
     );
 }

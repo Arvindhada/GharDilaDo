@@ -8,14 +8,16 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RouteProp } from '@react-navigation/native';
 import type { RootStackParamList } from '../navigation/AppNavigator';
 import { ChevronLeft } from 'lucide-react-native';
+import { useAppStore } from '../store/useAppStore';
 
 type Nav = NativeStackNavigationProp<RootStackParamList, 'OTP'>;
 type Route = RouteProp<RootStackParamList, 'OTP'>;
 
 export default function OTPScreen() {
     const navigation = useNavigation<Nav>();
-    const route = useRoute<Route>();
-    const { phone } = route.params;
+    const route = useRoute<any>();
+    const { phone, role } = route.params;
+    const setUserRole = useAppStore(state => state.setUserRole);
     const [otp, setOtp] = useState(['', '', '', '', '', '']);
     const inputRefs = useRef<(TextInput | null)[]>([]);
 
@@ -33,6 +35,9 @@ export default function OTPScreen() {
     };
 
     const handleVerify = () => {
+        // Save the chosen role before proceeding
+        if (role) setUserRole(role);
+
         // OTP verified → go to main tabs
         navigation.reset({ index: 0, routes: [{ name: 'MainTabs' }] });
     };

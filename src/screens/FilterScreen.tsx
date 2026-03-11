@@ -9,6 +9,7 @@ import type { RootStackParamList } from '../navigation/AppNavigator';
 import { X, Check } from 'lucide-react-native';
 import { useAppTheme } from '../context/ThemeContext';
 import RangeSlider from '../components/RangeSlider';
+import { SORT_OPTIONS } from '../data/properties';
 
 type Nav = NativeStackNavigationProp<RootStackParamList, 'Filter'>;
 
@@ -16,11 +17,6 @@ const BHK_OPTIONS = ['Any', '1 BHK', '2 BHK', '3 BHK', '4 BHK+'];
 const PROPERTY_TYPES = ['Any', 'Flat', 'House', 'Villa', 'Floor', 'Shop'];
 const AMENITIES = ['Wifi', 'Parking', 'AC', 'Gym', 'Security', 'Lift'];
 const FURNISHING_OPTIONS = ['Any', 'Unfurnished', 'Semi-Furnished', 'Furnished'];
-const SORT_OPTIONS = [
-    { label: 'Relevance', value: 'default' },
-    { label: 'Price: Low to High', value: 'price_asc' },
-    { label: 'Price: High to Low', value: 'price_desc' },
-];
 
 export default function FilterScreen() {
     const navigation = useNavigation<Nav>();
@@ -71,6 +67,9 @@ export default function FilterScreen() {
         setResetKey(prev => prev + 1); // Force slider reset
     };
 
+    const parsedMin = parseInt(minRent) || 0;
+    const parsedMax = parseInt(maxRent) || 100000;
+
     return (
         <SafeAreaView style={[styles.container, { backgroundColor: t.bg }]}>
             <StatusBar barStyle={t.bg === '#ffffff' ? 'dark-content' : 'light-content'} />
@@ -94,15 +93,15 @@ export default function FilterScreen() {
                 {/* Price Range Slider */}
                 <View style={{ paddingHorizontal: 10 }}>
                     <RangeSlider
-                        key={resetKey}
+                        key={`${resetKey}-${parsedMin}-${parsedMax}`} // Step 8: Key forces slider to update when inputs change externally
                         min={0}
                         max={100000}
                         step={1000}
-                        initialLow={parseInt(minRent) || 0}
-                        initialHigh={parseInt(maxRent) || 100000}
+                        initialLow={parsedMin}
+                        initialHigh={parsedMax}
                         onValueChange={(low, high) => {
-                            setMinRent(low.toString());
-                            setMaxRent(high.toString());
+                            if (low.toString() !== minRent) setMinRent(low.toString());
+                            if (high.toString() !== maxRent) setMaxRent(high.toString());
                         }}
                     />
                 </View>

@@ -1,0 +1,33 @@
+# ============================================================
+# ROOT .gitignore - GharDilaDo Monorepo
+# ============================================================
+
+# --- SECRETS (NEVER upload these) ---
+**/.env
+**/.env.local
+**/.env.production
+
+# --- Node.js Dependencies ---
+**/node_modules/
+
+# --- React Native / Expo ---
+GharDilaDo/.expo/
+GharDilaDo/android/
+GharDilaDo/ios/
+GharDilaDo/.bundle/
+
+# --- Build Outputs ---
+**/dist/
+**/build/
+**/.turbo/
+
+# --- Logs ---
+*.log
+npm-debug.log*
+
+# --- OS Files ---
+.DS_Store
+Thumbs.db
+
+# --- IDE ---
+.vscode/settings.json
